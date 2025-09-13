@@ -4,7 +4,7 @@ const Navbar = () => {
   return (
     <nav className="bg-blue-600 text-white p-4 flex justify-between items-center">
       <Link to="/" className="font-bold text-lg">
-        Career Assistant
+        RESUME SCANNER
       </Link>
       <div className="space-x-4">
         <Link to="/home">Home</Link>

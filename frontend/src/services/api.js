@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL; // backend on Railway/Render
+const API_URL = import.meta.env.VITE_API_BASE_URL; // backend on Railway/Render
 
 export async function fetchWithAuth(path, options = {}) {
   const token = localStorage.getItem("token");

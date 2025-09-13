@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Form
 from app.services.matching_service import match_resume_with_job, rank_candidates, suggest_missing_skills
+from app.supabase_client import supabase
 
 router = APIRouter()
 
@@ -16,4 +17,15 @@ def rank(job_id: str):
 
 @router.get("/suggest/{resume_id}/{job_id}")
 def suggest(resume_id: str, job_id: str):
-    return suggest_missing_skills(resume_id, job_id)
+    # Fetch resume and job content
+    r = supabase.table("resumes").select("content").eq("id", resume_id).single().execute()
+    j = supabase.table("jobs").select("description").eq("id", job_id).single().execute()
+    
+    if not r or not j or not getattr(r, "data", None) or not getattr(j, "data", None):
+        raise HTTPException(status_code=400, detail="Could not fetch resume or job")
+    
+    resume_text = r.data.get("content", "")
+    job_text = j.data.get("description", "")
+    
+    missing_skills = suggest_missing_skills(resume_text, job_text)
+    return {"missing_skills": missing_skills}

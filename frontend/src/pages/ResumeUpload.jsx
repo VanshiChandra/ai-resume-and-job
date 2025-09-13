@@ -1,42 +1,29 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 
-const ResumeUpload = () => {
+function ResumeUpload() {
   const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file) return alert("Please select a file");
     const formData = new FormData();
     formData.append("resume", file);
 
     try {
-      const res = await axios.post("/api/resume/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResult(res.data);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/resume/upload`, formData);
+      alert("Resume uploaded successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Error uploading resume");
+      alert("Upload failed.");
     }
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Upload Resume</h2>
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} className="mb-4" />
-      <button onClick={handleUpload} className="bg-blue-600 text-white px-4 py-2 rounded">
-        Upload
-      </button>
-
-      {result && (
-        <div className="mt-6 p-4 border rounded bg-gray-50">
-          <h3 className="font-bold">AI Analysis:</h3>
-          <pre className="whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
+    <div className="card" style={{ maxWidth: "500px", margin: "2rem auto" }}>
+      <h2>Upload Resume</h2>
+      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+      <button className="btn" onClick={handleUpload}>Upload</button>
     </div>
   );
-};
+}
 
 export default ResumeUpload;

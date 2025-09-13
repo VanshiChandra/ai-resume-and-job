@@ -1,38 +1,48 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const Leaderboard = () => {
-  const [scores, setScores] = useState([]);
+function Leaderboard() {
+  const [leaders, setLeaders] = useState([]);
 
   useEffect(() => {
-    axios.get("/api/scores/leaderboard")
-      .then(res => setScores(res.data || []))
-      .catch(err => console.error(err));
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/leaderboard`);
+        setLeaders(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchLeaderboard();
   }, []);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-      <table className="w-full border">
+    <div className="card">
+      <h2 className="text-center" style={{ fontSize: "1.75rem", marginBottom: "1rem" }}>
+        Leaderboard
+      </h2>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border px-4 py-2">Rank</th>
-            <th className="border px-4 py-2">User</th>
-            <th className="border px-4 py-2">Score</th>
+          <tr style={{ background: "#f3f4f6" }}>
+            <th style={{ textAlign: "left", padding: "0.5rem" }}>Name</th>
+            <th style={{ textAlign: "left", padding: "0.5rem" }}>Points</th>
           </tr>
         </thead>
         <tbody>
-          {scores.map((s, i) => (
-            <tr key={i}>
-              <td className="border px-4 py-2">{i + 1}</td>
-              <td className="border px-4 py-2">{s.user_name || s.user_email}</td>
-              <td className="border px-4 py-2">{s.score}</td>
+          {leaders.map((user, idx) => (
+            <tr key={idx}>
+              <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
+                {user.name}
+              </td>
+              <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
+                {user.points}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
   );
-};
+}
 
 export default Leaderboard;

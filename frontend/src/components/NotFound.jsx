@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 
 function NotFound() {
   return (
-    <div className="text-center py-20">
-      <h1 className="text-4xl font-bold mb-4">404 - Page Not Found</h1>
-      <Link to="/" className="text-blue-600">Go back Home</Link>
+    <div className="text-center" style={{ padding: "4rem" }}>
+      <h1 style={{ fontSize: "3rem", fontWeight: "bold" }}>404</h1>
+      <p style={{ marginBottom: "1rem" }}>Page not found.</p>
+      <Link to="/" className="btn">
+        Go Home
+      </Link>
     </div>
   );
 }

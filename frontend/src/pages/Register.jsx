@@ -5,35 +5,46 @@ import { useNavigate } from "react-router-dom";
 function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, { email, password });
+      setError("");
+      await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/register`,
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
       navigate("/login");
     } catch (err) {
-      alert("Registration failed. Try again.");
+      setError(
+        err.response?.data?.detail || "Registration failed. Try again."
+      );
     }
   };
 
   return (
-    <div className="card" style={{ maxWidth: "400px", margin: "2rem auto" }}>
-      <h2>Register</h2>
+    <div className="card max-w-sm mx-auto mt-10 p-6">
+      <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="input"
+        className="input w-full mb-3"
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="input"
+        className="input w-full mb-3"
       />
-      <button className="btn" onClick={handleRegister}>Register</button>
+      <button className="btn w-full" onClick={handleRegister}>
+        Register
+      </button>
+      {error && <p className="text-red-600 mt-3 text-center">{error}</p>}
     </div>
   );
 }

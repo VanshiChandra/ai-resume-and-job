@@ -1,48 +1,63 @@
 # backend/app/routes/auth_routes.py
+import os
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import RegisterRequest, LoginRequest
-from app.services.auth_service import register_user, login_user
+from supabase import create_client
 
 router = APIRouter()
 
+# Supabase client
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # service role key for admin ops
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
 @router.post("/register")
 def register(req: RegisterRequest):
-    result = register_user(req.name, req.email, req.password)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error", "Registration failed"))
+    # Create user in Supabase Auth
+    auth_res = supabase.auth.sign_up({"email": req.email, "password": req.password})
+    if not auth_res or not auth_res.user:
+        raise HTTPException(status_code=400, detail="Registration failed")
 
-    user = result.get("user")
-    role = result.get("role", "user")
+    user_id = auth_res.user.id
 
-    return {
-        "message": "Registered successfully",
-        "user": {
-            "id": user.get("id") if isinstance(user, dict) else getattr(user, "id", None),
-            "email": req.email,
-            "name": req.name,
-            "role": role,
-        },
-    }
+    # Create profile entry
+    profile_res = supabase.table("profiles").insert({
+        "id": user_id,
+        "name": req.name,
+        "email": req.email,
+        "role": "user"
+    }).execute()
+
+    if profile_res.error:
+        raise HTTPException(status_code=400, detail=f"Profile creation failed: {profile_res.error.message}")
+
+    return {"message": "Registered successfully", "user": {"id": user_id, "email": req.email, "name": req.name}}
+
 
 @router.post("/login")
 def login(req: LoginRequest):
-    result = login_user(req.email, req.password)
-    if not result.get("success"):
-        raise HTTPException(status_code=401, detail=result.get("error", "Login failed"))
+    # Sign in with Supabase
+    auth_res = supabase.auth.sign_in_with_password({
+        "email": req.email,
+        "password": req.password
+    })
 
-    user = result.get("user")
-    role = result.get("role", "user")
-    token = result.get("token")
+    if not auth_res or not auth_res.session:
+        raise HTTPException(status_code=401, detail="Login failed")
 
-    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    access_token = auth_res.session.access_token
+    user_id = auth_res.user.id
+
+    # Fetch role from profiles
+    profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
+    if profile_res.error or not profile_res.data:
+        raise HTTPException(status_code=401, detail="Profile not found")
+
+    role = profile_res.data.get("role", "user")
 
     return {
-        "token": token,
-        "isAdmin": role == "admin",   # 👈 for frontend localStorage
+        "token": access_token,   # frontend stores this instead of custom JWT
         "role": role,
-        "user": {
-            "id": user_id,
-            "email": req.email,
-            "role": role,
-        },
+        "user": {"id": user_id, "email": req.email, "role": role}
     }

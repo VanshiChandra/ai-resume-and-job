@@ -1,68 +1,67 @@
+# backend/app/services/auth_service.py
 import os
-import jwt
-import datetime
 from app.supabase_client import supabase
 
-JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
-JWT_ALGORITHM = "HS256"
-
-
-def create_jwt(email: str, is_admin: bool = False):
-    payload = {
-        "sub": email,
-        "isAdmin": is_admin,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=12)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
-
-def register_user(name: str, email: str, password: str):
+def register_user(name: str, email: str, password: str, role: str = "user"):
+    """
+    Register a new user with Supabase Auth and store their profile with role.
+    """
     try:
+        # Sign up using Supabase Auth
         res = supabase.auth.sign_up({"email": email, "password": password})
+        user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
 
-        user = None
-        if hasattr(res, "user") and res.user:
-            user = res.user
-        elif isinstance(res, dict) and res.get("user"):
-            user = res.get("user")
+        if not user:
+            return {"success": False, "error": "User registration failed"}
 
-        if user:
-            supabase.table("users").insert({
-                "id": user.get("id") if isinstance(user, dict) else user.id,
-                "email": email,
-                "name": name,
-                "isAdmin": False   # default: normal user
-            }).execute()
+        user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
 
-        return {"success": True, "user": user}
+        # Insert profile record (must match auth.users.id for RLS)
+        supabase.table("profiles").insert({
+            "id": user_id,
+            "email": email,
+            "name": name,
+            "role": role
+        }).execute()
+
+        return {"success": True, "user": user, "role": role}
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 def login_user(email: str, password: str):
+    """
+    Login with Supabase Auth, return token + role.
+    """
     try:
+        # Authenticate user
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        
-        user = None
-        if hasattr(res, "user") and res.user:
-            user = res.user
-        elif isinstance(res, dict) and res.get("user"):
-            user = res.get("user")
+        session = getattr(res, "session", None) or (res.get("session") if isinstance(res, dict) else None)
+        user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
 
-        if not user:
-            return {"success": False, "error": "Invalid credentials"}
+        if not user or not session:
+            return {"success": False, "error": "Invalid login credentials"}
 
-        # fetch from users table to get role/isAdmin
-        user_record = supabase.table("users").select("*").eq("email", email).execute()
-        user_data = user_record.data[0] if user_record.data else {}
-        is_admin = user_data.get("isAdmin", False)
+        user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
 
-        token = create_jwt(email, is_admin)
+        # Fetch profile to get role
+        profile = None
+        role = "user"
+        try:
+            if user_id:
+                profile_res = supabase.table("profiles").select("role").eq("id", user_id).maybe_single().execute()
+                profile = profile_res.data if hasattr(profile_res, "data") else profile_res.get("data")
+                if profile and "role" in profile:
+                    role = profile["role"]
+        except Exception:
+            pass
 
         return {
             "success": True,
-            "token": token,
-            "isAdmin": is_admin
+            "token": session.get("access_token") if isinstance(session, dict) else getattr(session, "access_token", None),
+            "user": user,
+            "role": role
         }
 
     except Exception as e:
@@ -70,6 +69,9 @@ def login_user(email: str, password: str):
 
 
 def reset_password(email: str):
+    """
+    Trigger Supabase password reset email.
+    """
     try:
         supabase.auth.reset_password_for_email(email)
         return {"success": True, "message": "Password reset initiated"}

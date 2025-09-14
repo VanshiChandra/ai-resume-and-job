@@ -67,14 +67,17 @@ function App() {
               }
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* ✅ Admin-only route */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute adminOnly>
                   <AdminDashboard />
                 </ProtectedRoute>
               }
             />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

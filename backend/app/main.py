@@ -1,18 +1,37 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_routes, resume_routes, job_routes, matching_routes, leaderboard_routes, ai_routes, admin_routes
+from app.routes import (
+    auth_routes,
+    resume_routes,
+    job_routes,
+    matching_routes,
+    leaderboard_routes,
+    ai_routes,
+    admin_routes
+)
+import os
 
 app = FastAPI(title="Resume Scanner + Job Matcher")
 
+# Detect environment
+ENV = os.getenv("ENV", "dev")  # default = dev
+
+if ENV == "prod":
+    origins = ["https://ai-resume-and-job.vercel.app"]  # Production frontend
+else:
+    origins = ["http://localhost:5173"]  # Dev frontend
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # restrict in production
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
 
+# Routers
 app.include_router(auth_routes.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(resume_routes.router, prefix="/api/resume", tags=["Resume"])
 app.include_router(job_routes.router, prefix="/api/job", tags=["Job"])
@@ -23,4 +42,4 @@ app.include_router(admin_routes.router, prefix="/api", tags=["Admin"])  # admin 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, "env": ENV}

@@ -10,22 +10,13 @@ from app.routes import (
     ai_routes,
     admin_routes
 )
-import os
 
 app = FastAPI(title="Resume Scanner + Job Matcher")
 
-# Detect environment
-ENV = os.getenv("ENV", "dev")  # default = dev
-
-if ENV == "prod":
-    origins = ["https://ai-resume-and-job.vercel.app"]  # Production frontend
-else:
-    origins = ["http://localhost:5173"]  # Dev frontend
-
-# CORS middleware
+# 🔓 Allow all origins (dev + prod) 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Keep as * for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -42,4 +33,4 @@ app.include_router(admin_routes.router, prefix="/api", tags=["Admin"])  # admin 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "env": ENV}
+    return {"ok": True}

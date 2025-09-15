@@ -9,7 +9,7 @@ function Dashboard() {
   const handleRecommend = async () => {
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/recommend`, 
+        `${import.meta.env.VITE_API_BASE_URL}/recommend`,
         { skills }
       );
       setRecommendations(res.data);
@@ -19,20 +19,11 @@ function Dashboard() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "1rem" }}>
-        Dashboard
-      </h2>
+    <div className="dashboard-container">
+      <h2 className="dashboard-title">Dashboard</h2>
 
       <textarea
-        style={{
-          width: "100%",
-          border: "1px solid #ccc",
-          padding: "0.75rem",
-          borderRadius: "6px",
-          marginBottom: "1rem",
-          minHeight: "100px",
-        }}
+        className="dashboard-textarea"
         placeholder="Enter your skills..."
         value={skills}
         onChange={(e) => setSkills(e.target.value)}
@@ -44,27 +35,21 @@ function Dashboard() {
 
       {recommendations && (
         <div style={{ marginTop: "2rem" }}>
-          <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-            Career Recommendations
-          </h3>
-          <ul style={{ paddingLeft: "1.25rem", listStyle: "disc" }}>
+          <h3 className="section-title">Career Recommendations</h3>
+          <ul className="section-list">
             {recommendations.careers.map((career, idx) => (
               <li key={idx}>{career}</li>
             ))}
           </ul>
 
-          <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", margin: "1.5rem 0 0.5rem" }}>
-            Suggested Courses
-          </h3>
-          <ul style={{ paddingLeft: "1.25rem", listStyle: "disc" }}>
+          <h3 className="section-title">Suggested Courses</h3>
+          <ul className="section-list">
             {recommendations.courses.map((course, idx) => (
               <li key={idx}>{course}</li>
             ))}
           </ul>
 
-          <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", margin: "1.5rem 0 0.5rem" }}>
-            Badges Earned
-          </h3>
+          <h3 className="section-title">Badges Earned</h3>
           <Badges badges={recommendations.badges} />
         </div>
       )}

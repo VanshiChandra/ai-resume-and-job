@@ -5,22 +5,18 @@ function Leaderboard() {
   const [leaders, setLeaders] = useState([]);
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/leaderboard`);
-        setLeaders(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchLeaderboard();
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/leaderboard`)
+      .then((res) => setLeaders(res.data))
+      .catch(() => alert("Error loading leaderboard"));
   }, []);
 
   return (
-    <div className="card">
-      <h2 className="text-center" style={{ fontSize: "1.75rem", marginBottom: "1rem" }}>
+    <div className="card" style={{ maxWidth: "600px", margin: "2rem auto" }}>
+      <h2 style={{ fontSize: "1.75rem", marginBottom: "1rem", textAlign: "center" }}>
         Leaderboard
       </h2>
+
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ background: "#f3f4f6" }}>

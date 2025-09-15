@@ -14,39 +14,40 @@ function Login() {
         { email, password }
       );
 
-      // Save Supabase token + role
+      // Save token + role
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
 
       navigate("/home");
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Login failed. Check credentials.");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="card w-full max-w-sm p-6 shadow-lg bg-white rounded-lg">
-        <h2 className="text-2xl font-bold text-center mb-4">Login</h2>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+      <div className="card" style={{ width: "100%", maxWidth: "400px" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>Login</h2>
+
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input mb-3 w-full border px-3 py-2 rounded"
+          className="input"
+          style={{ marginBottom: "1rem" }}
         />
+
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input mb-3 w-full border px-3 py-2 rounded"
+          className="input"
+          style={{ marginBottom: "1rem" }}
         />
-        <button
-          className="btn w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-          onClick={handleLogin}
-        >
+
+        <button className="btn" style={{ width: "100%" }} onClick={handleLogin}>
           Login
         </button>
       </div>

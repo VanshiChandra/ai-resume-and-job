@@ -8,8 +8,11 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="card" style={{ maxWidth: "400px", margin: "2rem auto" }}>
-      <h2>Forgot Password</h2>
+    <div style={{ maxWidth: "400px", margin: "2rem auto" }}>
+      <h2 style={{ marginBottom: "1rem", textAlign: "center" }}>
+        Forgot Password
+      </h2>
+
       <input
         type="email"
         placeholder="Enter your email"
@@ -17,7 +20,10 @@ function ForgotPassword() {
         onChange={(e) => setEmail(e.target.value)}
         className="input"
       />
-      <button className="btn" onClick={handleSubmit}>Send Reset Link</button>
+
+      <button className="btn" onClick={handleSubmit}>
+        Send Reset Link
+      </button>
     </div>
   );
 }

@@ -12,16 +12,22 @@ function ResumeUpload() {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/resume/upload`, formData);
       alert("Resume uploaded successfully!");
-    } catch (err) {
+    } catch {
       alert("Upload failed.");
     }
   };
 
   return (
     <div className="card" style={{ maxWidth: "500px", margin: "2rem auto" }}>
-      <h2>Upload Resume</h2>
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-      <button className="btn" onClick={handleUpload}>Upload</button>
+      <h2 style={{ marginBottom: "1rem" }}>Upload Resume</h2>
+      <input
+        type="file"
+        onChange={(e) => setFile(e.target.files[0])}
+        style={{ marginBottom: "1rem" }}
+      />
+      <button className="btn" onClick={handleUpload}>
+        Upload
+      </button>
     </div>
   );
 }

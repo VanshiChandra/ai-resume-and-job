@@ -19,9 +19,9 @@ import NotFound from "./pages/NotFound";
 function App() {
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
+      <div className="app-container">
         <Navbar />
-        <main className="flex-grow p-6">
+        <main className="app-main">
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />

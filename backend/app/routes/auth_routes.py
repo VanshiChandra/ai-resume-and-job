@@ -14,19 +14,19 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 @router.post("/register")
 def register(req: RegisterRequest):
     try:
-        # Create user in Supabase Auth (directly with admin API)
+        # ✅ Create user in Supabase Auth (admin API)
         auth_res = supabase.auth.admin.create_user({
             "email": req.email,
             "password": req.password,
             "email_confirm": True
         })
 
-        if not auth_res or not auth_res.user:
-            raise HTTPException(status_code=400, detail="Registration failed")
+        if not auth_res or not getattr(auth_res, "user", None):
+            raise HTTPException(status_code=400, detail="Registration failed: no user returned")
 
         user_id = auth_res.user.id
 
-        # Create profile entry
+        # ✅ Insert into profiles
         profile_res = supabase.table("profiles").insert({
             "id": user_id,
             "name": req.name,
@@ -34,11 +34,9 @@ def register(req: RegisterRequest):
             "role": "user"
         }).execute()
 
-        if profile_res.error:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Profile creation failed: {profile_res.error.message}"
-            )
+        if getattr(profile_res, "error", None):
+            print("❌ Profile insert error:", profile_res.error)
+            raise HTTPException(status_code=400, detail="Profile creation failed")
 
         return {
             "message": "Registered successfully",
@@ -46,36 +44,40 @@ def register(req: RegisterRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+        print("❌ Registration error:", str(e))
+        raise HTTPException(status_code=500, detail="Unexpected error during registration")
 
 
 @router.post("/login")
 def login(req: LoginRequest):
     try:
-        # Sign in with Supabase
+        # ✅ Sign in
         auth_res = supabase.auth.sign_in_with_password({
             "email": req.email,
             "password": req.password
         })
 
         if not auth_res or not getattr(auth_res, "session", None):
-            raise HTTPException(status_code=401, detail="Login failed: invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
         access_token = auth_res.session.access_token
         user_id = auth_res.user.id
 
-        # Fetch role from profiles
+        # ✅ Fetch role from profiles
         profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
-        if profile_res.error or not profile_res.data:
+
+        if getattr(profile_res, "error", None) or not profile_res.data:
+            print("❌ Profile fetch error:", profile_res.error if profile_res.error else "No data")
             raise HTTPException(status_code=401, detail="Profile not found")
 
         role = profile_res.data.get("role", "user")
 
         return {
-            "token": access_token,   # frontend stores this instead of custom JWT
+            "token": access_token,
             "role": role,
             "user": {"id": user_id, "email": req.email, "role": role}
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error during login: {str(e)}")
+        print("❌ Login error:", str(e))
+        raise HTTPException(status_code=500, detail="Unexpected error during login")

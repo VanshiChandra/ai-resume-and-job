@@ -1,7 +1,7 @@
 function Footer() {
   return (
-    <footer className="bg-gray-800 text-gray-300 text-center py-4 mt-8">
-      <p className="text-sm">
+    <footer className="footer">
+      <p className="footer-text">
         © {new Date().getFullYear()} ResumeMatcher. All rights reserved.
       </p>
     </footer>

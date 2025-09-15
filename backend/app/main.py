@@ -13,31 +13,30 @@ from app.routes import (
 
 app = FastAPI(title="Resume Scanner + Job Matcher")
 
-# ✅ CORS setup
+# ✅ Allow frontend origin (Vercel) + local dev
 origins = [
-    "https://ai-resume-and-job.vercel.app",  # your Vercel frontend
-    "http://localhost:5173",                 # local dev (vite)
-    "http://127.0.0.1:5173"
+    "https://ai-resume-and-job.vercel.app",  # your frontend
+    "http://localhost:5173",                 # local dev
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,   # change to ["*"] if you want all
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Routes
+# ✅ Register routes
 app.include_router(auth_routes.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(resume_routes.router, prefix="/api/resume", tags=["Resume"])
 app.include_router(job_routes.router, prefix="/api/job", tags=["Job"])
 app.include_router(matching_routes.router, prefix="/api/match", tags=["Matching"])
 app.include_router(leaderboard_routes.router, prefix="/api/leaderboard", tags=["Leaderboard"])
 app.include_router(ai_routes.router, prefix="/api/ai", tags=["AI"])
-app.include_router(admin_routes.router, prefix="/api", tags=["Admin"])  # under /api/admin
+app.include_router(admin_routes.router, prefix="/api", tags=["Admin"])  # /api/admin/*
 
-# ✅ Health check
+# ✅ Simple health check
 @app.get("/api/health")
 def health():
     return {"ok": True}

@@ -16,7 +16,7 @@ app = FastAPI(title="Resume Scanner + Job Matcher")
 # 🔓 Allow all origins (dev + prod) 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Keep as * for now
+    allow_origins=["https://ai-resume-and-job.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]

@@ -52,15 +52,19 @@ def login(req: LoginRequest):
             "password": req.password
         })
 
+        # If login fails, Supabase returns no session
         if not auth_res or not getattr(auth_res, "session", None):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid login credentials")
 
         access_token = auth_res.session.access_token
         user_id = auth_res.user.id
 
         # Fetch role
         profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
-        if profile_res.error or not profile_res.data:
+        if profile_res.error:
+            raise HTTPException(status_code=500, detail="Error fetching profile")
+
+        if not profile_res.data:
             raise HTTPException(status_code=404, detail="Profile not found")
 
         return {
@@ -72,4 +76,5 @@ def login(req: LoginRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error during login: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+

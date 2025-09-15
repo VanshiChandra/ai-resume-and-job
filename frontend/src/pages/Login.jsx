@@ -25,9 +25,11 @@ function Login() {
   };
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-      <div className="card" style={{ width: "100%", maxWidth: "400px" }}>
-        <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>Login</h2>
+    <div style={{ maxWidth: "400px", margin: "3rem auto" }}>
+      <div className="card">
+        <h2 className="text-center" style={{ marginBottom: "1rem" }}>
+          Login
+        </h2>
 
         <input
           type="email"
@@ -35,7 +37,6 @@ function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="input"
-          style={{ marginBottom: "1rem" }}
         />
 
         <input
@@ -44,7 +45,6 @@ function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="input"
-          style={{ marginBottom: "1rem" }}
         />
 
         <button className="btn" style={{ width: "100%" }} onClick={handleLogin}>

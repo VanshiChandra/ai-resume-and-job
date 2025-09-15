@@ -14,11 +14,15 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 @router.post("/register")
 def register(req: RegisterRequest):
     try:
-        # Create user in Supabase Auth
-        auth_res = supabase.auth.sign_up({"email": req.email, "password": req.password})
+        # Create user in Supabase Auth (directly with admin API)
+        auth_res = supabase.auth.admin.create_user({
+            "email": req.email,
+            "password": req.password,
+            "email_confirm": True
+        })
 
-        if not auth_res or not getattr(auth_res, "user", None):
-            raise HTTPException(status_code=400, detail="Registration failed: Supabase did not return a user")
+        if not auth_res or not auth_res.user:
+            raise HTTPException(status_code=400, detail="Registration failed")
 
         user_id = auth_res.user.id
 
@@ -31,7 +35,10 @@ def register(req: RegisterRequest):
         }).execute()
 
         if profile_res.error:
-            raise HTTPException(status_code=400, detail=f"Profile creation failed: {profile_res.error.message}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Profile creation failed: {profile_res.error.message}"
+            )
 
         return {
             "message": "Registered successfully",
@@ -39,7 +46,7 @@ def register(req: RegisterRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error during registration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
 
 @router.post("/login")

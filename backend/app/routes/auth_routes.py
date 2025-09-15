@@ -1,88 +1,105 @@
-from fastapi import APIRouter, HTTPException
-from app.models.schemas import RegisterRequest, LoginRequest
-from supabase import create_client
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from supabase import create_client, Client
 import os
 
-router = APIRouter()
+router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
+# Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+# ============================
+# Request models
+# ============================
+class RegisterRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+# ============================
+# Register
+# ============================
 @router.post("/register")
-def register(req: RegisterRequest):
+async def register_user(payload: RegisterRequest):
+    # Step 1: Create user in Supabase Auth
+    auth_response = supabase.auth.sign_up({
+        "email": payload.email,
+        "password": payload.password
+    })
+
+    if auth_response.get("error"):
+        error_msg = auth_response["error"]["message"]
+        if "already registered" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this email already exists."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Auth error: {error_msg}"
+        )
+
+    user = auth_response.get("user")
+    if not user:
+        raise HTTPException(status_code=500, detail="User creation failed in Supabase Auth.")
+
+    user_id = user["id"]
+
+    # Step 2: Insert into profiles table if not exists
+    profile = {
+        "id": user_id,
+        "name": payload.name,
+        "email": payload.email,
+        "role": "user"
+    }
+
     try:
-        # Try creating user
-        auth_res = supabase.auth.admin.create_user({
-            "email": req.email,
-            "password": req.password,
-            "email_confirm": True
-        })
-
-        if not auth_res or not auth_res.user:
-            raise HTTPException(status_code=400, detail="Registration failed")
-
-        user_id = auth_res.user.id
-
-        # Create profile
-        supabase.table("profiles").insert({
-            "id": user_id,
-            "name": req.name,
-            "email": req.email,
-            "role": "user"
-        }).execute()
-
-        return {"message": "Registered successfully"}
-
+        # Use UPSERT to avoid duplicate insert issues
+        supabase.table("profiles").upsert(profile, on_conflict="id").execute()
     except Exception as e:
-        error_msg = str(e)
+        raise HTTPException(status_code=500, detail=f"Failed to create profile: {str(e)}")
 
-        if "already been registered" in error_msg:
-            raise HTTPException(status_code=409, detail="Email already registered")
-
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {error_msg}")
+    return {"message": "User registered successfully", "user_id": user_id}
 
 
+# ============================
+# Login
+# ============================
 @router.post("/login")
-def login(req: LoginRequest):
-    try:
-        auth_res = supabase.auth.sign_in_with_password({
-            "email": req.email,
-            "password": req.password
-        })
+async def login_user(payload: LoginRequest):
+    # Authenticate user
+    auth_response = supabase.auth.sign_in_with_password({
+        "email": payload.email,
+        "password": payload.password
+    })
 
-        # Debug log to see what Supabase returned
-        print("🔍 Supabase login response:", auth_res)
+    if auth_response.get("error"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid login credentials"
+        )
 
-        # Check for login failure
-        if not auth_res or not getattr(auth_res, "session", None):
-            raise HTTPException(status_code=401, detail="Invalid login credentials")
+    session = auth_response.get("session")
+    user = auth_response.get("user")
 
-        if not auth_res.user:
-            raise HTTPException(status_code=401, detail="User not found in Supabase")
+    if not session or not user:
+        raise HTTPException(status_code=500, detail="Login failed due to missing session.")
 
-        access_token = auth_res.session.access_token
-        user_id = auth_res.user.id
-
-        # Fetch role
-        profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
-
-        if profile_res.error:
-            print("❌ Supabase profile error:", profile_res.error)
-            raise HTTPException(status_code=500, detail="Error fetching profile")
-
-        if not profile_res.data:
-            raise HTTPException(status_code=404, detail="Profile not found")
-
-        return {
-            "token": access_token,
-            "role": profile_res.data.get("role", "user"),
-            "user": {"id": user_id, "email": req.email}
+    return {
+        "message": "Login successful",
+        "access_token": session["access_token"],
+        "refresh_token": session["refresh_token"],
+        "user": {
+            "id": user["id"],
+            "email": user["email"]
         }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("❌ Unexpected login error:", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    }

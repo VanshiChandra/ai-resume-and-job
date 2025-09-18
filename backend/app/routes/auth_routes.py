@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from supabase import create_client, Client
 import os
 
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
+router = APIRouter(tags=["Auth"])  # ❌ removed prefix here
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")

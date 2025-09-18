@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 from supabase import create_client, Client
 import os
 
-router = APIRouter(tags=["Auth"])  # ❌ removed prefix here
+router = APIRouter(tags=["Auth"])
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -36,23 +36,13 @@ async def register_user(payload: RegisterRequest):
         "password": payload.password
     })
 
-    if auth_response.get("error"):
-        error_msg = auth_response["error"]["message"]
-        if "already registered" in error_msg.lower():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists."
-            )
+    if auth_response.user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Auth error: {error_msg}"
+            detail="User creation failed in Supabase Auth."
         )
 
-    user = auth_response.get("user")
-    if not user:
-        raise HTTPException(status_code=500, detail="User creation failed in Supabase Auth.")
-
-    user_id = user["id"]
+    user_id = str(auth_response.user.id)
 
     # Step 2: Insert into profiles table if not exists
     profile = {
@@ -63,7 +53,6 @@ async def register_user(payload: RegisterRequest):
     }
 
     try:
-        # Use UPSERT to avoid duplicate insert issues
         supabase.table("profiles").upsert(profile, on_conflict="id").execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create profile: {str(e)}")
@@ -82,24 +71,18 @@ async def login_user(payload: LoginRequest):
         "password": payload.password
     })
 
-    if auth_response.get("error"):
+    if auth_response.user is None or auth_response.session is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid login credentials"
         )
 
-    session = auth_response.get("session")
-    user = auth_response.get("user")
-
-    if not session or not user:
-        raise HTTPException(status_code=500, detail="Login failed due to missing session.")
-
     return {
         "message": "Login successful",
-        "access_token": session["access_token"],
-        "refresh_token": session["refresh_token"],
+        "access_token": auth_response.session.access_token,
+        "refresh_token": auth_response.session.refresh_token,
         "user": {
-            "id": user["id"],
-            "email": user["email"]
+            "id": str(auth_response.user.id),
+            "email": auth_response.user.email
         }
     }

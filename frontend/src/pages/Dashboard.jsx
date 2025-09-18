@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; // ✅ import Link
+import { Link } from "react-router-dom";
 import Badges from "../components/Badges";
 
 function Dashboard() {
@@ -20,21 +20,29 @@ function Dashboard() {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container" style={{ padding: "2rem" }}>
       <h2 className="dashboard-title">Dashboard</h2>
+
+      {/* Back to Home */}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <Link to="/home" style={{ textDecoration: "none" }}>
+          <button style={{ padding: "0.5rem 1rem" }}>Back to Home</button>
+        </Link>
+      </div>
 
       <textarea
         className="dashboard-textarea"
         placeholder="Enter your skills..."
         value={skills}
         onChange={(e) => setSkills(e.target.value)}
+        style={{ width: "100%", height: "100px", marginBottom: "1rem" }}
       />
 
       <button onClick={handleRecommend} className="btn">
         Get Recommendations
       </button>
 
-      {/* ✅ Resume Upload button */}
+      {/* Resume Upload button */}
       <div style={{ marginTop: "1.5rem" }}>
         <Link to="/resume-upload" style={{ textDecoration: "none" }}>
           <button className="btn">Upload Resume</button>

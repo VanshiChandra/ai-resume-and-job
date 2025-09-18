@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import Leaderboard from "./pages/Leaderboard";
 import ResumeUpload from "./pages/ResumeUpload";
 import RoleSuggestions from "./pages/RoleSuggestions";
@@ -23,14 +24,26 @@ function App() {
         <Navbar />
         <main className="app-main">
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* Protected Routes */}
             <Route
               path="/home"
               element={
                 <ProtectedRoute>
                   <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
@@ -66,9 +79,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* ✅ Admin-only route */}
+            {/* Admin-only route */}
             <Route
               path="/admin"
               element={
@@ -78,6 +90,7 @@ function App() {
               }
             />
 
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

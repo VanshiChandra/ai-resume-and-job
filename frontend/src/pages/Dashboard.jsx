@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // ✅ import Link
 import Badges from "../components/Badges";
 
 function Dashboard() {
@@ -32,6 +33,13 @@ function Dashboard() {
       <button onClick={handleRecommend} className="btn">
         Get Recommendations
       </button>
+
+      {/* ✅ Resume Upload button */}
+      <div style={{ marginTop: "1.5rem" }}>
+        <Link to="/resume-upload" style={{ textDecoration: "none" }}>
+          <button className="btn">Upload Resume</button>
+        </Link>
+      </div>
 
       {recommendations && (
         <div style={{ marginTop: "2rem" }}>

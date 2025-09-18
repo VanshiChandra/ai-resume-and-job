@@ -1,12 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
-import { getCurrentUser, logout } from "../utils/auth"; // your auth utils
+import { useState, useEffect } from "react";
 
 function Navbar() {
   const navigate = useNavigate();
-  const user = getCurrentUser(); // returns null if not logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const admin = localStorage.getItem("isAdmin") === "true";
+    setIsLoggedIn(!!token);
+    setIsAdmin(admin);
+  }, []);
 
   const handleLogout = () => {
-    logout();
+    localStorage.removeItem("token");
+    localStorage.removeItem("isAdmin");
+    setIsLoggedIn(false);
+    setIsAdmin(false);
     navigate("/login");
   };
 
@@ -18,29 +29,20 @@ function Navbar() {
         </Link>
 
         <div className="navbar-links">
-          {!user && (
-            <>
-              <Link to="/login" className="btn navbar-login">Login</Link>
-              <Link to="/register" className="navbar-link">Register</Link>
-            </>
-          )}
+          {/* Always visible links */}
+          <Link to="/home" className="navbar-link">Home</Link>
+          <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
+          <Link to="/job-list" className="navbar-link">Jobs</Link>
 
-          {user && (
+          {/* Conditional links */}
+          {!isLoggedIn && <Link to="/login" className="btn navbar-login">Login</Link>}
+
+          {isLoggedIn && (
             <>
-              <Link to="/home" className="navbar-link">Home</Link>
-              <Link to="/dashboard" className="navbar-link">Dashboard</Link>
-              <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
               <Link to="/resume-upload" className="navbar-link">Upload Resume</Link>
               <Link to="/role-suggestions" className="navbar-link">Role Suggestions</Link>
-              <Link to="/job-list" className="navbar-link">Jobs</Link>
-
-              {user.role === "admin" && (
-                <Link to="/admin" className="navbar-link">Admin</Link>
-              )}
-
-              <button onClick={handleLogout} className="btn navbar-logout">
-                Logout
-              </button>
+              {isAdmin && <Link to="/admin" className="navbar-link">Admin</Link>}
+              <button onClick={handleLogout} className="btn navbar-logout">Logout</button>
             </>
           )}
         </div>

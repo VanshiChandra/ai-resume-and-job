@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from app.services.resume_service import process_resume, list_resumes, get_resume, delete_resume
+from app.services.resume_service import upload_resume,list_resumes, get_resume, delete_resume
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
@@ -14,7 +14,7 @@ async def upload_resume_route(
     Upload a resume, parse it, store in Supabase, and generate AI role suggestions.
     """
     try:
-        result = await process_resume(file, user_id, job_desc or "")
+        result = await upload_resume(file, user_id, job_desc or "")
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

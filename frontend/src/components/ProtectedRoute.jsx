@@ -1,15 +1,17 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { getCurrentUser } from "../utils/auth"; // centralized auth util
 
-function ProtectedRoute({ children, adminOnly }) {
-  const token = localStorage.getItem("token");
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
+function ProtectedRoute({ children, adminOnly = false }) {
+  const user = getCurrentUser(); // returns null if not logged in
 
-  if (!token) {
+  if (!user) {
+    // Not logged in
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && user.role !== "admin") {
+    // Not authorized for admin route
     return <Navigate to="/home" replace />;
   }
 

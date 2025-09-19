@@ -33,3 +33,7 @@ class MatchResult(BaseModel):
     score: float
     missing_skills: List[str]
     matched_skills: List[str]
+    
+class MatchRequest(BaseModel):
+    resume_id: str
+    job_id: str

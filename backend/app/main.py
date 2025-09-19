@@ -9,6 +9,7 @@ from app.routes import (
     leaderboard_routes,
     ai_routes,
     admin_routes,
+    recommend_routes
 )
 
 app = FastAPI(title="Resume Scanner + Job Matcher")
@@ -33,7 +34,7 @@ app.include_router(resume_routes.router, prefix="/api/resumes", tags=["Resumes"]
 app.include_router(job_routes.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(matching_routes.router, prefix="/api/matches", tags=["Matching"])
 app.include_router(leaderboard_routes.router, prefix="/api/leaderboard", tags=["Leaderboard"])
-
+app.include_router(recommend_routes.router, prefix="/api/recommend")
 # ✅ AI endpoints (recommend, suggestions, etc.)
 app.include_router(ai_routes.router, prefix="/api", tags=["AI"])  # /api/recommend
 

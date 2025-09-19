@@ -1,7 +1,11 @@
 from fastapi import APIRouter
-from app.services.leaderboard_service import get_global_leaderboard, get_job_leaderboard, get_user_badges
+from app.services.leaderboard_service import (
+    get_global_leaderboard, 
+    get_job_leaderboard, 
+    get_user_badges
+)
 
-router = APIRouter()
+router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 
 @router.get("/global")
 def global_leaderboard():

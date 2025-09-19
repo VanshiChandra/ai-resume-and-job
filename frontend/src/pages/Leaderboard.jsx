@@ -26,16 +26,20 @@ function Leaderboard() {
         </thead>
         <tbody>
           {leaders.map((user, idx) => (
-            <tr key={idx}>
-              <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
-                {user.name}
-              </td>
-              <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
-                {user.points}
-              </td>
-            </tr>
-          ))}
+           <tr key={idx}>
+           <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
+            {user.profiles?.name || "Unknown"}
+           </td>
+           <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
+           {user.score}
+           </td>
+           <td style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}>
+           {user.badges?.join(", ") || "—"}
+           </td>
+          </tr>
+           ))}
         </tbody>
+
       </table>
     </div>
   );

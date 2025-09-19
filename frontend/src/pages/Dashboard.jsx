@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function Dashboard({ user }) {
+function Dashboard({ user: initialUser }) {
+  const [user, setUser] = useState(initialUser || null);
   const [recommendations, setRecommendations] = useState(null);
   const [aiRoles, setAiRoles] = useState(null);
   const [resumes, setResumes] = useState([]);
@@ -9,8 +10,17 @@ function Dashboard({ user }) {
   const [selectedResume, setSelectedResume] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
   const [loading, setLoading] = useState(false);
+  const [newResume, setNewResume] = useState(null);
 
-  // Load resumes and jobs for dropdowns
+  // Load stored user on mount
+  useEffect(() => {
+    if (!user) {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser) setUser(storedUser);
+    }
+  }, [user]);
+
+  // Load resumes and jobs
   useEffect(() => {
     if (!user?.id) return;
 
@@ -25,7 +35,7 @@ function Dashboard({ user }) {
       .catch(() => console.warn("No jobs found"));
   }, [user]);
 
-  // ✅ ATS style recommendation
+  // ATS Resume → Job Match
   const handleMatch = async () => {
     if (!selectedResume || !selectedJob) {
       alert("Please select both resume and job");
@@ -45,7 +55,7 @@ function Dashboard({ user }) {
     }
   };
 
-  // ✅ AI role recommendations
+  // AI Role Recommendations
   const handleAiRecommendations = async () => {
     if (!user?.id) {
       alert("Please log in first");
@@ -65,13 +75,81 @@ function Dashboard({ user }) {
     }
   };
 
+  // Upload new resume
+  const handleResumeUpload = async () => {
+    if (!newResume) {
+      alert("Please select a file to upload");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", newResume);
+    formData.append("user_id", user.id);
+
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/resume/upload`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      const uploadedResume = res.data;
+
+      // Update resumes list and automatically select the new resume
+      setResumes((prev) => [...prev, uploadedResume]);
+      setSelectedResume(uploadedResume.id);
+      setNewResume(null);
+      alert("Resume uploaded successfully and selected!");
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading resume");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Redirect if no user
+  if (!user?.id) {
+    return <div>Please log in to access your dashboard.</div>;
+  }
+
   return (
     <div style={{ maxWidth: "900px", margin: "2rem auto" }}>
       <h1>Welcome, {user?.name || "User"} 👋</h1>
 
-      {/* ============================= */}
-      {/* ATS STYLE MATCHING SECTION */}
-      {/* ============================= */}
+      {/* Add Resume Section */}
+      <div
+        style={{
+          marginTop: "2rem",
+          padding: "1rem",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+        }}
+      >
+        <h2>Add New Resume</h2>
+        <input
+          type="file"
+          onChange={(e) => setNewResume(e.target.files[0])}
+          style={{ marginRight: "1rem" }}
+        />
+        <button
+          onClick={handleResumeUpload}
+          disabled={loading}
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#f59e0b",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          {loading ? "Uploading..." : "Upload Resume"}
+        </button>
+      </div>
+
+      {/* ATS Matching */}
       <div
         style={{
           marginTop: "2rem",
@@ -81,8 +159,6 @@ function Dashboard({ user }) {
         }}
       >
         <h2>ATS Resume → Job Match</h2>
-
-        {/* Resume Selector */}
         <select
           value={selectedResume}
           onChange={(e) => setSelectedResume(e.target.value)}
@@ -96,7 +172,6 @@ function Dashboard({ user }) {
           ))}
         </select>
 
-        {/* Job Selector */}
         <select
           value={selectedJob}
           onChange={(e) => setSelectedJob(e.target.value)}
@@ -125,7 +200,6 @@ function Dashboard({ user }) {
           {loading ? "Matching..." : "Match Resume"}
         </button>
 
-        {/* ATS Results */}
         {recommendations && (
           <div style={{ marginTop: "1rem" }}>
             <h3>Match Score: {recommendations.score}%</h3>
@@ -139,9 +213,7 @@ function Dashboard({ user }) {
         )}
       </div>
 
-      {/* ============================= */}
-      {/* AI ROLE RECOMMENDATION SECTION */}
-      {/* ============================= */}
+      {/* AI Role Recommendations */}
       <div
         style={{
           marginTop: "2rem",
@@ -166,7 +238,6 @@ function Dashboard({ user }) {
           {loading ? "Loading..." : "Get AI Suggestions"}
         </button>
 
-        {/* AI Results */}
         {aiRoles && (
           <ul style={{ marginTop: "1rem" }}>
             {aiRoles.suggested_roles?.map((role, idx) => (

@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-function AiSuggestions({ userId }) {
+function AiSuggestions({ userId, refreshKey }) {
   const [latest, setLatest] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!userId) return;
 
     const fetchSuggestions = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        // Latest suggestion from AI
+        // Latest AI suggestion
         const latestRes = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/ai/suggest-for-user/${userId}`
         );
@@ -24,16 +27,17 @@ function AiSuggestions({ userId }) {
         setHistory(historyRes.data || []);
       } catch (err) {
         console.error(err);
-        alert("Error fetching AI suggestions");
+        setError("Failed to fetch AI suggestions.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchSuggestions();
-  }, [userId]);
+  }, [userId, refreshKey]); // auto-refresh when userId or refreshKey changes
 
   if (loading) return <p style={{ textAlign: "center" }}>Loading suggestions...</p>;
+  if (error) return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;
 
   return (
     <div className="card" style={{ maxWidth: "600px", margin: "2rem auto", padding: "1rem" }}>
@@ -53,12 +57,12 @@ function AiSuggestions({ userId }) {
         <p>No suggestions yet.</p>
       )}
 
-      {/* History */}
+      {/* Suggestion History */}
       <h3 style={{ fontSize: "1.2rem", margin: "1.5rem 0 0.5rem" }}>Suggestion History</h3>
       {history.length > 0 ? (
         <ul style={{ marginLeft: "1rem" }}>
           {history.map((entry, idx) => (
-            <li key={idx}>
+            <li key={entry.id || idx}>
               <strong>{new Date(entry.created_at).toLocaleString()}:</strong>{" "}
               {Array.isArray(entry.suggested_roles)
                 ? entry.suggested_roles.join(", ")

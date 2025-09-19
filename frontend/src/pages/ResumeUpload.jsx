@@ -9,8 +9,9 @@ function ResumeUpload({ userId }) {
   const [resumes, setResumes] = useState([]);
   const [refreshAI, setRefreshAI] = useState(false); // 🔄 trigger AI refresh
 
-  // Fetch resumes on mount or after upload/delete
+  // Fetch resumes on mount or refresh
   useEffect(() => {
+    if (!userId) return;
     const fetchResumes = async () => {
       try {
         const res = await axios.get(
@@ -44,7 +45,7 @@ function ResumeUpload({ userId }) {
       setFile(null);
       setJobDesc("");
 
-      // Refresh resume list
+      // Refresh resumes and AI suggestions
       setRefreshAI((prev) => !prev);
     } catch (err) {
       console.error(err);
@@ -90,7 +91,7 @@ function ResumeUpload({ userId }) {
         {uploading ? "Uploading..." : "Upload"}
       </button>
 
-      {/* List of uploaded resumes with delete option */}
+      {/* List of uploaded resumes */}
       <ul className="section-list" style={{ marginBottom: "1.5rem" }}>
         {resumes.length > 0 ? (
           resumes.map((resume) => (
@@ -112,7 +113,7 @@ function ResumeUpload({ userId }) {
         )}
       </ul>
 
-      {/* AI Suggestions based on latest resume */}
+      {/* AI Suggestions */}
       <AiSuggestions key={refreshAI} userId={userId} />
     </div>
   );

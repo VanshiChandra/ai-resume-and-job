@@ -7,8 +7,31 @@ import AiSuggestions from "../pages/AiSuggestions";
 function Dashboard({ user }) {
   const [skills, setSkills] = useState("");
   const [recommendations, setRecommendations] = useState(null);
+  const [aiRoles, setAiRoles] = useState([]);
+
+  // Fetch AI suggestions as fallback on mount
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchAiRoles = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/ai-suggestions?user_id=${user.id}`
+        );
+        if (res.data && res.data.length > 0) {
+          setAiRoles(res.data[0].suggested_roles || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch AI suggestions:", err);
+      }
+    };
+
+    fetchAiRoles();
+  }, [user?.id]);
 
   const handleRecommend = async () => {
+    if (!skills.trim()) return;
+
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/recommend`,
@@ -16,7 +39,22 @@ function Dashboard({ user }) {
       );
       setRecommendations(res.data);
     } catch (err) {
-      console.error(err);
+      console.warn("/recommend API failed, falling back to AI suggestions:", err);
+
+      // fallback: show AI suggestions if available
+      if (aiRoles.length > 0) {
+        setRecommendations({
+          careers: aiRoles,
+          courses: [],
+          badges: []
+        });
+      } else {
+        setRecommendations({
+          careers: ["Software Engineer", "Data Engineer", "DevOps Engineer"],
+          courses: [],
+          badges: []
+        });
+      }
     }
   };
 
@@ -24,16 +62,13 @@ function Dashboard({ user }) {
     <div className="dashboard-container" style={{ padding: "2rem" }}>
       <h2 className="dashboard-title">Welcome, {user?.name || "User"}</h2>
 
-      {/* Back to Home */}
       <div style={{ marginBottom: "1.5rem" }}>
         <Link to="/home" style={{ textDecoration: "none" }}>
           <button style={{ padding: "0.5rem 1rem" }}>Back to Home</button>
         </Link>
       </div>
 
-      {/* Skills Input and Recommendation */}
       <textarea
-        className="dashboard-textarea"
         placeholder="Enter your skills..."
         value={skills}
         onChange={(e) => setSkills(e.target.value)}
@@ -43,14 +78,14 @@ function Dashboard({ user }) {
         Get Recommendations
       </button>
 
-      {/* Resume Upload button */}
+      {/* Resume Upload */}
       <div style={{ marginTop: "1.5rem" }}>
         <Link to="/resume-upload" style={{ textDecoration: "none" }}>
           <button className="btn">Upload Resume</button>
         </Link>
       </div>
 
-      {/* Skills-based Recommendations */}
+      {/* Recommendations */}
       {recommendations && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">Career Recommendations</h3>

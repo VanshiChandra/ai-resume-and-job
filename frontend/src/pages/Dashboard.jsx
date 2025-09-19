@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Badges from "../components/Badges";
-import AiSuggestions from "../components/AiSuggestions";
+import AiSuggestions from "../pages/AiSuggestions";
 
 function Dashboard({ user }) {
   const [skills, setSkills] = useState("");

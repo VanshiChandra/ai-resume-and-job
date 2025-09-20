@@ -75,36 +75,51 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
+# backend/app/services/resume_service.py
+
 def list_resumes(user_id: str):
     """
-    ✅ List all resumes of a user (newest first).
+    ✅ List all resumes of a user (newest first) with ATS matches
     """
     try:
         res = (
             supabase.table("resumes")
-            .select("id, file_name, file_url, job_desc, created_at")
+            .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .execute()
         )
-        return res.data if res and getattr(res, "data", None) else []
+        resumes = res.data if res and getattr(res, "data", None) else []
+
+        # Attach ATS matches for each resume
+        for r in resumes:
+            matches_info = compute_matches_for_resume(user_id, r.get("parsed_text", ""))
+            r["matches"] = matches_info.get("matches")
+            r["avg_score"] = matches_info.get("avg_score")
+
+        return resumes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resumes: {str(e)}")
 
 
 def get_resume(resume_id: str):
     """
-    ✅ Retrieve a single resume by ID.
+    ✅ Retrieve a single resume by ID with ATS results
     """
     try:
         res = (
             supabase.table("resumes")
-            .select("id, file_name, file_url, job_desc, parsed_text, created_at")
+            .select("*")
             .eq("id", resume_id)
             .single()
             .execute()
         )
-        return res.data if res and getattr(res, "data", None) else {}
+        resume = res.data if res and getattr(res, "data", None) else {}
+        if resume:
+            matches_info = compute_matches_for_resume(resume["user_id"], resume.get("parsed_text", ""))
+            resume["matches"] = matches_info.get("matches")
+            resume["avg_score"] = matches_info.get("avg_score")
+        return resume
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving resume: {str(e)}")
 

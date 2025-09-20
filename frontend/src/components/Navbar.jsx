@@ -34,8 +34,7 @@ function Navbar() {
           <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
           <Link to="/job-list" className="navbar-link">Jobs</Link>
 
-          {/* Conditional links */}
-          {!isLoggedIn && <Link to="/login" className="btn navbar-login">Login</Link>}
+        
 
           {isLoggedIn && (
             <>

@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -12,17 +13,15 @@ function Dashboard({ user }) {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  // ✅ Fetch ATS matches + leaderboard
+  // Fetch ATS matches and leaderboard
   useEffect(() => {
     if (!user?.id) return;
 
     const fetchData = async () => {
       try {
-        // ATS Matches
         const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`);
         setMatches(matchRes.data);
 
-        // Leaderboard (global)
         const lbRes = await axios.get(`${API_BASE}/leaderboard/global`);
         setLeaderboard(lbRes.data);
       } catch (err) {
@@ -33,7 +32,7 @@ function Dashboard({ user }) {
     fetchData();
   }, [user, API_BASE]);
 
-  // ✅ Handle manual recommendations from skills input
+  // Handle manual skill-based recommendations
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
@@ -123,7 +122,7 @@ function Dashboard({ user }) {
         </div>
       )}
 
-      {/* AI-based Role Suggestions */}
+      {/* AI Role Suggestions */}
       {user?.id && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">AI Role Suggestions</h3>

@@ -219,3 +219,57 @@ html, body, #root {
   margin-bottom: 1.5rem;
   font-size: 1rem;
 }
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logout-btn {
+  padding: 8px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ai-section {
+  margin-top: 10px;
+  background: #eef2ff;
+  padding: 10px;
+  border-radius: 6px;
+}
+.dashboard {
+  padding: 20px;
+}
+
+.upload-btn {
+  margin-bottom: 20px;
+  padding: 10px 15px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.resume-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resume-card {
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ats-section {
+  margin-top: 10px;
+  background: #f9fafb;
+  padding: 10px;
+  border-radius: 6px;
+}

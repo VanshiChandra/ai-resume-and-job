@@ -33,7 +33,7 @@ function Navbar() {
           <Link to="/home" className="navbar-link">Home</Link>
           <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
           <Link to="/job-list" className="navbar-link">Jobs</Link>
-          <Link to="/logout" className="navbar-link">Logout</Link>
+          
         
 
           {isLoggedIn && (

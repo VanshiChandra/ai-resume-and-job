@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Badges from "../components/Badges";
@@ -7,14 +7,37 @@ import AiSuggestions from "../pages/AiSuggestions";
 function Dashboard({ user }) {
   const [skills, setSkills] = useState("");
   const [recommendations, setRecommendations] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+  // ✅ Fetch ATS matches + leaderboard
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchData = async () => {
+      try {
+        // ATS Matches
+        const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`);
+        setMatches(matchRes.data);
+
+        // Leaderboard (global)
+        const lbRes = await axios.get(`${API_BASE}/leaderboard/global`);
+        setLeaderboard(lbRes.data);
+      } catch (err) {
+        console.error("Dashboard data fetch error:", err);
+      }
+    };
+
+    fetchData();
+  }, [user, API_BASE]);
+
+  // ✅ Handle manual recommendations from skills input
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/recommend`,
-        { skills }
-      );
+      const res = await axios.post(`${API_BASE}/recommend`, { skills });
       setRecommendations(res.data);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
@@ -69,6 +92,34 @@ function Dashboard({ user }) {
 
           <h3 className="section-title">Badges Earned</h3>
           <Badges badges={recommendations.badges} />
+        </div>
+      )}
+
+      {/* ATS Matches */}
+      {matches.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h3 className="section-title">ATS Matches</h3>
+          <ul className="section-list">
+            {matches.map((m, idx) => (
+              <li key={idx}>
+                <strong>{m.job_title}</strong> – Score: {m.score}%
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Global Leaderboard */}
+      {leaderboard.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h3 className="section-title">Leaderboard</h3>
+          <ol>
+            {leaderboard.map((lb, idx) => (
+              <li key={idx}>
+                {idx + 1}. {lb.profiles?.name || "Anonymous"} – {lb.score}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

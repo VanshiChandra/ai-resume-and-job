@@ -1,4 +1,3 @@
-# backend/app/services/resume_service.py
 import uuid
 from fastapi import UploadFile, HTTPException
 from app.supabase_client import supabase
@@ -12,6 +11,7 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
     """
     ✅ Upload a resume:
        - Stores file in Supabase Storage
+       - Saves file_name + job_desc in DB
        - Extracts text + skills (NLP)
        - Computes ATS job matches
        - Generates AI role suggestions
@@ -30,12 +30,18 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
         file_url = upload_bytes_to_storage(key, content, file.content_type)
 
         # Insert into resumes table
-        res = supabase.table("resumes").insert({
-            "user_id": user_id,
-            "file_url": file_url,
-            "parsed_text": text,
-            "job_desc": job_desc or None,
-        }).select("*").execute()
+        res = (
+            supabase.table("resumes")
+            .insert({
+                "user_id": user_id,
+                "file_url": file_url,
+                "file_name": file.filename,
+                "parsed_text": text,
+                "job_desc": job_desc or None,
+            })
+            .select("*")
+            .execute()
+        )
 
         resume_id = res.data[0]["id"] if res and getattr(res, "data", None) else None
 
@@ -44,7 +50,7 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
 
         # Store AI role suggestions
         suggested_roles = suggest_roles_by_skills(skills)
-        if suggested_roles:
+        if suggested_roles and resume_id:
             rows = [
                 {
                     "user_id": user_id,
@@ -59,6 +65,7 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
         return {
             "resume_id": resume_id,
             "file_url": file_url,
+            "file_name": file.filename,
             "skills": skills,
             "matches": matches_info.get("matches"),
             "avg_score": matches_info.get("avg_score"),
@@ -75,7 +82,7 @@ def list_resumes(user_id: str):
     try:
         res = (
             supabase.table("resumes")
-            .select("*")
+            .select("id, file_name, file_url, job_desc, created_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .execute()
@@ -92,7 +99,7 @@ def get_resume(resume_id: str):
     try:
         res = (
             supabase.table("resumes")
-            .select("*")
+            .select("id, file_name, file_url, job_desc, parsed_text, created_at")
             .eq("id", resume_id)
             .single()
             .execute()

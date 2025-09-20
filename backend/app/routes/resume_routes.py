@@ -1,4 +1,3 @@
-# backend/app/routes/resume_routes.py
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from app.services.resume_service import (
     upload_resume,
@@ -18,9 +17,11 @@ async def upload_resume_route(
 ):
     """
     ✅ Upload a resume:
-       - Stores file in Supabase
-       - Parses resume
-       - Generates AI job role suggestions (if job_desc provided)
+       - Stores file in Supabase Storage
+       - Saves file_name + job_desc in DB
+       - Parses resume text/skills
+       - Computes ATS job matches
+       - Generates AI job role suggestions
     """
     try:
         result = await upload_resume(file, user_id, job_desc or "")

@@ -29,20 +29,20 @@ function Navbar() {
         </Link>
 
         <div className="navbar-links">
-          {/* Always visible links */}
           <Link to="/home" className="navbar-link">Home</Link>
           <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
           <Link to="/job-list" className="navbar-link">Jobs</Link>
-          
-        
 
-          {isLoggedIn && (
+          {isLoggedIn ? (
             <>
+              <Link to="/dashboard" className="navbar-link">Dashboard</Link>
               <Link to="/resume-upload" className="navbar-link">Upload Resume</Link>
               <Link to="/role-suggestions" className="navbar-link">Role Suggestions</Link>
               {isAdmin && <Link to="/admin" className="navbar-link">Admin</Link>}
               <button onClick={handleLogout} className="btn navbar-logout">Logout</button>
             </>
+          ) : (
+            <Link to="/login" className="btn navbar-login">Login</Link>
           )}
         </div>
       </div>

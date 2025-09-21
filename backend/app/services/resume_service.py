@@ -22,14 +22,14 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
 
         # Extract text and skills
         parsed = extract_text_and_skills(content, file.filename)
-        skills = parsed.get("skills", [])
         text = parsed.get("text", "")
+        skills = parsed.get("skills", [])
 
         # Upload file to Supabase storage
         key = f"resumes/{user_id}/{uuid.uuid4().hex}-{file.filename}"
         file_url = upload_bytes_to_storage(key, content, file.content_type)
 
-        # Insert into resumes table
+        # Insert resume record into DB
         res = (
             supabase.table("resumes")
             .insert({
@@ -75,58 +75,43 @@ async def upload_resume(file: UploadFile, user_id: str, job_desc: str = ""):
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
-# backend/app/services/resume_service.py
-
 def list_resumes(user_id: str):
     """
-    ✅ List all resumes of a user (newest first) with ATS matches
+    ✅ List all resumes of a user (newest first) with basic info.
     """
     try:
         res = (
             supabase.table("resumes")
-            .select("*")
+            .select("id, file_name, file_url, job_desc, created_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .execute()
         )
-        resumes = res.data if res and getattr(res, "data", None) else []
-
-        # Attach ATS matches for each resume
-        for r in resumes:
-            matches_info = compute_matches_for_resume(user_id, r.get("parsed_text", ""))
-            r["matches"] = matches_info.get("matches")
-            r["avg_score"] = matches_info.get("avg_score")
-
-        return resumes
+        return res.data if res and getattr(res, "data", None) else []
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resumes: {str(e)}")
 
 
 def get_resume(resume_id: str):
     """
-    ✅ Retrieve a single resume by ID with ATS results
+    ✅ Retrieve a single resume by ID with detailed info.
     """
     try:
         res = (
             supabase.table("resumes")
-            .select("*")
+            .select("id, file_name, file_url, job_desc, parsed_text, created_at")
             .eq("id", resume_id)
             .single()
             .execute()
         )
-        resume = res.data if res and getattr(res, "data", None) else {}
-        if resume:
-            matches_info = compute_matches_for_resume(resume["user_id"], resume.get("parsed_text", ""))
-            resume["matches"] = matches_info.get("matches")
-            resume["avg_score"] = matches_info.get("avg_score")
-        return resume
+        return res.data if res and getattr(res, "data", None) else {}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving resume: {str(e)}")
 
 
 def delete_resume(resume_id: str):
     """
-    ✅ Delete a resume by ID (DB + Storage).
+    ✅ Delete a resume by ID (DB + Supabase Storage)
     """
     try:
         # Fetch file URL

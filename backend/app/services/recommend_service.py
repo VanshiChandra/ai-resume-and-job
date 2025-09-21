@@ -35,3 +35,11 @@ def combined_recommend(user_id: str, resume_id: str, job_id: str):
         "ATS": ats,
         "AI": ai
     }
+def recommend_roles(resume_text: str):
+    """Simple mock AI role recommender (can be replaced with OpenAI, HuggingFace etc.)"""
+    suggestions = [
+        {"role": "Software Engineer", "confidence": 85},
+        {"role": "Data Analyst", "confidence": 78},
+        {"role": "Machine Learning Engineer", "confidence": 72},
+    ]
+    return suggestions

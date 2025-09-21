@@ -1,4 +1,3 @@
-// frontend/src/pages/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -10,6 +9,7 @@ function Dashboard({ user }) {
   const [recommendations, setRecommendations] = useState(null);
   const [matches, setMatches] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -19,13 +19,19 @@ function Dashboard({ user }) {
 
     const fetchData = async () => {
       try {
-        const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`);
-        setMatches(matchRes.data);
+        setLoading(true);
 
+        // ATS Resume Matches
+        const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`);
+        setMatches(matchRes.data || []);
+
+        // Global Leaderboard
         const lbRes = await axios.get(`${API_BASE}/leaderboard/global`);
-        setLeaderboard(lbRes.data);
+        setLeaderboard(lbRes.data || []);
       } catch (err) {
         console.error("Dashboard data fetch error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -42,6 +48,9 @@ function Dashboard({ user }) {
       console.error("Error fetching recommendations:", err);
     }
   };
+
+  if (!user) return <p>Please log in to view your dashboard.</p>;
+  if (loading) return <p>Loading dashboard...</p>;
 
   return (
     <div className="dashboard-container" style={{ padding: "2rem" }}>

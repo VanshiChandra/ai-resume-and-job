@@ -16,7 +16,7 @@ import JobList from "./pages/JobList";
 import ForgotPassword from "./pages/ForgotPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
-
+import ATSChecker from "./pages/ATSChecker";
 function App() {
   return (
     <Router>
@@ -29,6 +29,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/ats-checker" element={<ATSChecker />} />
 
             {/* Protected Routes */}
             <Route

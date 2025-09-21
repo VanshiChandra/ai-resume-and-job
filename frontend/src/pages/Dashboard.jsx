@@ -1,36 +1,55 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Badges from "../components/Badges";
 import AiSuggestions from "../pages/AiSuggestions";
 
 function Dashboard({ user: propUser }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(propUser || null);
   const [skills, setSkills] = useState("");
   const [recommendations, setRecommendations] = useState(null);
   const [matches, setMatches] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshAI, setRefreshAI] = useState(false); // 🔄 trigger AI refresh
+  const [refreshAI, setRefreshAI] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
-  const token = localStorage.getItem("token");
 
-  // Load user from localStorage if propUser is missing
+  // Fetch user from backend if propUser is not provided
   useEffect(() => {
-    if (!user) {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) setUser(JSON.parse(storedUser));
-    }
-  }, [user]);
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const userRes = await axios.get(`${API_BASE}/auth/me`, { headers });
+        setUser(userRes.data);
+
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+        navigate("/login");
+      }
+    };
+
+    if (!user) fetchUser();
+  }, [user, API_BASE, navigate]);
 
   // Fetch ATS matches and leaderboard
   useEffect(() => {
-    if (!user?.id || !token) return;
+    if (!user?.id) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) return navigate("/login");
+
         const headers = { Authorization: `Bearer ${token}` };
 
         const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`, { headers });
@@ -38,6 +57,7 @@ function Dashboard({ user: propUser }) {
 
         const lbRes = await axios.get(`${API_BASE}/leaderboard/global`, { headers });
         setLeaderboard(lbRes.data || []);
+
       } catch (err) {
         console.error("Dashboard data fetch error:", err);
       } finally {
@@ -46,36 +66,35 @@ function Dashboard({ user: propUser }) {
     };
 
     fetchData();
-  }, [user, API_BASE, token]);
+  }, [user, API_BASE]);
 
   // Handle manual skill-based recommendations
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
+      const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
       const res = await axios.post(`${API_BASE}/recommend`, { skills }, { headers });
       setRecommendations(res.data);
-      setRefreshAI((prev) => !prev); // refresh AI suggestions
+      setRefreshAI((prev) => !prev);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
     }
   };
 
-  if (!user) return <p>Please log in to view your dashboard.</p>;
+  if (!user) return <p>Loading user info...</p>;
   if (loading) return <p>Loading dashboard...</p>;
 
   return (
     <div className="dashboard-container" style={{ padding: "2rem" }}>
       <h2 className="dashboard-title">Welcome, {user?.name || "User"}</h2>
 
-      {/* Back to Home */}
       <div style={{ marginBottom: "1.5rem" }}>
         <Link to="/home" style={{ textDecoration: "none" }}>
           <button style={{ padding: "0.5rem 1rem" }}>Back to Home</button>
         </Link>
       </div>
 
-      {/* Skills Input */}
       <textarea
         placeholder="Enter your skills..."
         value={skills}
@@ -86,14 +105,12 @@ function Dashboard({ user: propUser }) {
         Get Recommendations
       </button>
 
-      {/* Resume Upload */}
       <div style={{ marginTop: "1.5rem" }}>
         <Link to="/resume-upload" style={{ textDecoration: "none" }}>
           <button className="btn">Upload Resume</button>
         </Link>
       </div>
 
-      {/* Skills-based Recommendations */}
       {recommendations && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">Career Recommendations</h3>
@@ -115,7 +132,6 @@ function Dashboard({ user: propUser }) {
         </div>
       )}
 
-      {/* ATS Matches */}
       {matches.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">ATS Matches</h3>
@@ -129,7 +145,6 @@ function Dashboard({ user: propUser }) {
         </div>
       )}
 
-      {/* Global Leaderboard */}
       {leaderboard.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">Leaderboard</h3>
@@ -143,7 +158,6 @@ function Dashboard({ user: propUser }) {
         </div>
       )}
 
-      {/* AI Role Suggestions */}
       {user?.id && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">AI Role Suggestions</h3>

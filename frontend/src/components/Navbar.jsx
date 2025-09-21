@@ -6,28 +6,24 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check login status on mount and when localStorage changes
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const admin = localStorage.getItem("isAdmin") === "true";
-    setIsLoggedIn(!!token);
-    setIsAdmin(admin);
-
-    // Optional: Listen for storage changes (multi-tab sync)
-    const handleStorageChange = () => {
-      const updatedToken = localStorage.getItem("token");
-      const updatedAdmin = localStorage.getItem("isAdmin") === "true";
-      setIsLoggedIn(!!updatedToken);
-      setIsAdmin(updatedAdmin);
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+      setIsLoggedIn(!!token);
+      setIsAdmin(role === "admin");
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+
+    checkLoginStatus();
+
+    // Listen for storage changes (multi-tab sync)
+    window.addEventListener("storage", checkLoginStatus);
+    return () => window.removeEventListener("storage", checkLoginStatus);
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("user"); // optional, if storing user info
+    localStorage.removeItem("role");
     setIsLoggedIn(false);
     setIsAdmin(false);
     navigate("/login");

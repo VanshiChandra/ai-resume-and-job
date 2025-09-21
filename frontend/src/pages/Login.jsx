@@ -6,20 +6,20 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/login`,
-        { email, password }
-      );
+      const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
 
-      // Save token + role
+      // Save only token and role
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
 
-      navigate("/home");
-    } catch {
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login failed:", err);
       alert("Login failed. Check credentials.");
     }
   };

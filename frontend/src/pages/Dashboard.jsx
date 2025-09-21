@@ -6,7 +6,7 @@ import AiSuggestions from "../pages/AiSuggestions";
 
 function Dashboard({ user: propUser }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(propUser || null);
+  const [user, setUser] = useState(propUser || JSON.parse(localStorage.getItem("user")) || null);
   const [skills, setSkills] = useState("");
   const [recommendations, setRecommendations] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -15,35 +15,20 @@ function Dashboard({ user: propUser }) {
   const [refreshAI, setRefreshAI] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const token = localStorage.getItem("token");
 
-  // Fetch user via /me
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return navigate("/login");
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
-        const headers = { Authorization: `Bearer ${token}` };
-        const res = await axios.get(`${API_BASE}/auth/me`, { headers });
-        setUser(res.data);
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-        navigate("/login");
-      }
-    };
-    if (!user) fetchUser();
-  }, [user, API_BASE, navigate]);
-
-  // Fetch matches and leaderboard
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !token) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) return navigate("/login");
-
         const headers = { Authorization: `Bearer ${token}` };
 
         const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`, { headers });
@@ -57,18 +42,17 @@ function Dashboard({ user: propUser }) {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [user, API_BASE]);
 
-  // Manual skill recommendations
+    fetchData();
+  }, [user, API_BASE, token]);
+
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
-      const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
       const res = await axios.post(`${API_BASE}/recommend`, { skills }, { headers });
       setRecommendations(res.data);
-      setRefreshAI(prev => !prev);
+      setRefreshAI((prev) => !prev);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
     }
@@ -93,7 +77,9 @@ function Dashboard({ user: propUser }) {
         onChange={(e) => setSkills(e.target.value)}
         style={{ width: "100%", height: "100px", marginBottom: "1rem" }}
       />
-      <button onClick={handleRecommend} className="btn">Get Recommendations</button>
+      <button onClick={handleRecommend} className="btn">
+        Get Recommendations
+      </button>
 
       <div style={{ marginTop: "1.5rem" }}>
         <Link to="/resume-upload" style={{ textDecoration: "none" }}>
@@ -104,9 +90,19 @@ function Dashboard({ user: propUser }) {
       {recommendations && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">Career Recommendations</h3>
-          <ul className="section-list">{recommendations.careers?.map((c, i) => <li key={i}>{c}</li>)}</ul>
+          <ul className="section-list">
+            {recommendations.careers?.map((career, idx) => (
+              <li key={idx}>{career}</li>
+            ))}
+          </ul>
+
           <h3 className="section-title">Suggested Courses</h3>
-          <ul className="section-list">{recommendations.courses?.map((c, i) => <li key={i}>{c}</li>)}</ul>
+          <ul className="section-list">
+            {recommendations.courses?.map((course, idx) => (
+              <li key={idx}>{course}</li>
+            ))}
+          </ul>
+
           <h3 className="section-title">Badges Earned</h3>
           <Badges badges={recommendations.badges} />
         </div>
@@ -115,18 +111,26 @@ function Dashboard({ user: propUser }) {
       {matches.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">ATS Matches</h3>
-          <ul className="section-list">{matches.map((m, i) => (
-            <li key={i}><strong>{m.job_title}</strong> – Score: {m.score}%</li>
-          ))}</ul>
+          <ul className="section-list">
+            {matches.map((m, idx) => (
+              <li key={idx}>
+                <strong>{m.job_title}</strong> – Score: {m.score}%
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {leaderboard.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">Leaderboard</h3>
-          <ol>{leaderboard.map((lb, i) => (
-            <li key={i}>{i + 1}. {lb.profiles?.name || "Anonymous"} – {lb.score}</li>
-          ))}</ol>
+          <ol>
+            {leaderboard.map((lb, idx) => (
+              <li key={idx}>
+                {idx + 1}. {lb.profiles?.name || "Anonymous"} – {lb.score}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

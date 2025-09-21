@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from supabase import create_client, Client
 import os
-
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 router = APIRouter(tags=["Auth"])
-
+security = HTTPBearer()
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -85,4 +86,26 @@ async def login_user(payload: LoginRequest):
             "id": str(auth_response.user.id),
             "email": auth_response.user.email
         }
+    }
+@router.get("/me")
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+
+    # Verify token via Supabase
+    try:
+        user_info = supabase.auth.get_user(token)
+        if not user_info or not user_info.user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Optionally, fetch full profile from Supabase table
+    profile_res = supabase.table("profiles").select("*").eq("id", str(user_info.user.id)).single().execute()
+    profile = profile_res.data if profile_res and getattr(profile_res, "data", None) else {}
+
+    return {
+        "id": str(user_info.user.id),
+        "email": user_info.user.email,
+        "name": profile.get("name"),
+        "role": profile.get("role", "user")
     }

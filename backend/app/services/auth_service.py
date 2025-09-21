@@ -1,4 +1,3 @@
-# backend/app/services/auth_service.py
 import os
 from app.supabase_client import supabase
 
@@ -7,7 +6,6 @@ def register_user(name: str, email: str, password: str, role: str = "user"):
     Register a new user with Supabase Auth and store their profile with role.
     """
     try:
-        # Sign up using Supabase Auth
         res = supabase.auth.sign_up({"email": email, "password": password})
         user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
 
@@ -16,7 +14,6 @@ def register_user(name: str, email: str, password: str, role: str = "user"):
 
         user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
 
-        # Insert profile record (must match auth.users.id for RLS)
         supabase.table("profiles").insert({
             "id": user_id,
             "email": email,
@@ -35,7 +32,6 @@ def login_user(email: str, password: str):
     Login with Supabase Auth, return token + role.
     """
     try:
-        # Authenticate user
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         session = getattr(res, "session", None) or (res.get("session") if isinstance(res, dict) else None)
         user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
@@ -44,9 +40,6 @@ def login_user(email: str, password: str):
             return {"success": False, "error": "Invalid login credentials"}
 
         user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-
-        # Fetch profile to get role
-        profile = None
         role = "user"
         try:
             if user_id:
@@ -57,11 +50,21 @@ def login_user(email: str, password: str):
         except Exception:
             pass
 
+        # ============================
+        # New: Fetch current user from /me
+        # ============================
+        current_user = None
+        try:
+            current_user = supabase.auth.get_user(session.access_token if hasattr(session, "access_token") else session.get("access_token"))
+        except Exception:
+            pass
+
         return {
             "success": True,
             "token": session.get("access_token") if isinstance(session, dict) else getattr(session, "access_token", None),
             "user": user,
-            "role": role
+            "role": role,
+            "current_user": current_user  # new addition
         }
 
     except Exception as e:
@@ -77,3 +80,25 @@ def reset_password(email: str):
         return {"success": True, "message": "Password reset initiated"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def get_current_user(token: str):
+    """
+    Fetch user info from Supabase /me endpoint.
+    """
+    try:
+        user_info = supabase.auth.get_user(token)
+        if not user_info or not getattr(user_info, "user", None):
+            return None
+
+        profile_res = supabase.table("profiles").select("*").eq("id", str(user_info.user.id)).single().execute()
+        profile = profile_res.data if profile_res and getattr(profile_res, "data", None) else {}
+
+        return {
+            "id": str(user_info.user.id),
+            "email": user_info.user.email,
+            "name": profile.get("name"),
+            "role": profile.get("role", "user")
+        }
+    except Exception:
+        return None

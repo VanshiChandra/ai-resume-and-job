@@ -4,35 +4,41 @@ from app.services.matching_service import match_resume_with_job, rank_candidates
 
 router = APIRouter(prefix="/matching", tags=["Matching"])
 
+# ============================
+# Match a resume with a job
+# ============================
 @router.post("/match")
 def match(req: MatchRequest):
-    """
-    Match a resume with a job posting and return ATS-style score/details.
-    """
     try:
-        res = match_resume_with_job(req.resume_id, req.job_id)
-        if not res:
-            raise HTTPException(status_code=400, detail="Match failed")
-        return res
+        result = match_resume_with_job(req.resume_id, req.job_id)
+        if not result:
+            raise HTTPException(status_code=400, detail="Resume-job match failed")
+        return {"success": True, "data": result}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to match resume with job: {str(e)}")
 
+# ============================
+# Rank candidates for a job
+# ============================
 @router.get("/rank/{job_id}")
 def rank(job_id: str):
-    """
-    Rank all candidates for a given job posting.
-    """
     try:
-        return rank_candidates(job_id)
+        rankings = rank_candidates(job_id)
+        if not rankings:
+            raise HTTPException(status_code=404, detail="No candidate rankings found for this job")
+        return {"success": True, "data": rankings}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to rank candidates: {str(e)}")
 
+# ============================
+# Suggest missing skills for a resume
+# ============================
 @router.get("/suggest/{resume_id}/{job_id}")
 def suggest(resume_id: str, job_id: str):
-    """
-    Suggest missing skills for a resume compared to a specific job posting.
-    """
     try:
-        return suggest_missing_skills(resume_id, job_id)
+        suggestions = suggest_missing_skills(resume_id, job_id)
+        if not suggestions:
+            raise HTTPException(status_code=404, detail="No missing skill suggestions found")
+        return {"success": True, "data": suggestions}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to suggest missing skills: {str(e)}")

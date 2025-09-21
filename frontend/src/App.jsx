@@ -16,7 +16,8 @@ import JobList from "./pages/JobList";
 import ForgotPassword from "./pages/ForgotPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
-import ATSChecker from "./pages/ATSChecker";
+import ATSChecker from "./pages/ATSChecker"; // Make sure ATSChecker.jsx has: export default ATSChecker;
+
 function App() {
   return (
     <Router>

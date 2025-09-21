@@ -4,29 +4,39 @@ import { Link } from "react-router-dom";
 import Badges from "../components/Badges";
 import AiSuggestions from "../pages/AiSuggestions";
 
-function Dashboard({ user }) {
+function Dashboard({ user: propUser }) {
+  const [user, setUser] = useState(propUser || null);
   const [skills, setSkills] = useState("");
   const [recommendations, setRecommendations] = useState(null);
   const [matches, setMatches] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshAI, setRefreshAI] = useState(false); // 🔄 trigger AI refresh
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const token = localStorage.getItem("token");
+
+  // Load user from localStorage if propUser is missing
+  useEffect(() => {
+    if (!user) {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) setUser(JSON.parse(storedUser));
+    }
+  }, [user]);
 
   // Fetch ATS matches and leaderboard
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !token) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
+        const headers = { Authorization: `Bearer ${token}` };
 
-        // ATS Resume Matches
-        const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`);
+        const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`, { headers });
         setMatches(matchRes.data || []);
 
-        // Global Leaderboard
-        const lbRes = await axios.get(`${API_BASE}/leaderboard/global`);
+        const lbRes = await axios.get(`${API_BASE}/leaderboard/global`, { headers });
         setLeaderboard(lbRes.data || []);
       } catch (err) {
         console.error("Dashboard data fetch error:", err);
@@ -36,14 +46,16 @@ function Dashboard({ user }) {
     };
 
     fetchData();
-  }, [user, API_BASE]);
+  }, [user, API_BASE, token]);
 
   // Handle manual skill-based recommendations
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
-      const res = await axios.post(`${API_BASE}/recommend`, { skills });
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.post(`${API_BASE}/recommend`, { skills }, { headers });
       setRecommendations(res.data);
+      setRefreshAI((prev) => !prev); // refresh AI suggestions
     } catch (err) {
       console.error("Error fetching recommendations:", err);
     }
@@ -135,7 +147,7 @@ function Dashboard({ user }) {
       {user?.id && (
         <div style={{ marginTop: "2rem" }}>
           <h3 className="section-title">AI Role Suggestions</h3>
-          <AiSuggestions userId={user.id} />
+          <AiSuggestions userId={user.id} refreshKey={refreshAI} />
         </div>
       )}
     </div>

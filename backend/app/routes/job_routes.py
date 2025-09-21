@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import JobCreate
 from app.services.job_service import add_job, list_jobs, get_job_by_id, delete_job
 
-router = APIRouter()
+router = APIRouter(prefix="/job", tags=["Job"])  # ✅ Added prefix
 
 @router.post("/add")
 def create_job(job: JobCreate):

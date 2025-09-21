@@ -7,23 +7,24 @@ function AiSuggestions({ userId, refreshKey }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !token) return;
 
     const fetchSuggestions = async () => {
       setLoading(true);
       setError(null);
       try {
+        const headers = { Authorization: `Bearer ${token}` };
+
         // Latest AI suggestion
-        const latestRes = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/ai/suggest-for-user/${userId}`
-        );
+        const latestRes = await axios.get(`${API_BASE}/ai/suggest-for-user/${userId}`, { headers });
         setLatest(latestRes.data.suggested_roles || []);
 
         // Past suggestions history
-        const historyRes = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/ai/suggestions/${userId}`
-        );
+        const historyRes = await axios.get(`${API_BASE}/ai/suggestions/${userId}`, { headers });
         setHistory(historyRes.data || []);
       } catch (err) {
         console.error(err);
@@ -34,7 +35,7 @@ function AiSuggestions({ userId, refreshKey }) {
     };
 
     fetchSuggestions();
-  }, [userId, refreshKey]); // auto-refresh when userId or refreshKey changes
+  }, [userId, refreshKey, token]); // auto-refresh when userId, refreshKey, or token changes
 
   if (loading) return <p style={{ textAlign: "center" }}>Loading suggestions...</p>;
   if (error) return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;

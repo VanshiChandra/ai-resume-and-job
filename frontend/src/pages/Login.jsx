@@ -12,11 +12,10 @@ function Login() {
     try {
       const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
 
-      // Save only token and role
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
+      // Save token and role from backend
+      localStorage.setItem("token", res.data.token || res.data.access_token);
+      localStorage.setItem("role", res.data.user?.role || "user");
 
-      // Redirect to dashboard
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
@@ -27,15 +26,13 @@ function Login() {
   return (
     <div style={{ maxWidth: "400px", margin: "3rem auto" }}>
       <div className="card">
-        <h2 className="text-center" style={{ marginBottom: "1rem" }}>
-          Login
-        </h2>
+        <h2 className="text-center" style={{ marginBottom: "1rem" }}>Login</h2>
 
         <input
           type="email"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           className="input"
         />
 
@@ -43,7 +40,7 @@ function Login() {
           type="password"
           placeholder="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
           className="input"
         />
 

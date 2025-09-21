@@ -16,23 +16,25 @@ function Dashboard({ user: propUser }) {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  // Fetch user from backend if propUser is not provided
+  // -------------------------------
+  // Fetch user from /auth/me if not provided
+  // -------------------------------
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
         const headers = { Authorization: `Bearer ${token}` };
-
-        const userRes = await axios.get(`${API_BASE}/auth/me`, { headers });
-        setUser(userRes.data);
-
+        const res = await axios.get(`${API_BASE}/auth/me`, { headers });
+        setUser(res.data);
       } catch (err) {
         console.error("Failed to fetch user:", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
         navigate("/login");
       }
     };
@@ -40,24 +42,25 @@ function Dashboard({ user: propUser }) {
     if (!user) fetchUser();
   }, [user, API_BASE, navigate]);
 
+  // -------------------------------
   // Fetch ATS matches and leaderboard
+  // -------------------------------
   useEffect(() => {
     if (!user?.id) return;
 
     const fetchData = async () => {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return navigate("/login");
+
+      const headers = { Authorization: `Bearer ${token}` };
+
       try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) return navigate("/login");
-
-        const headers = { Authorization: `Bearer ${token}` };
-
         const matchRes = await axios.get(`${API_BASE}/matching/user/${user.id}`, { headers });
         setMatches(matchRes.data || []);
 
         const lbRes = await axios.get(`${API_BASE}/leaderboard/global`, { headers });
         setLeaderboard(lbRes.data || []);
-
       } catch (err) {
         console.error("Dashboard data fetch error:", err);
       } finally {
@@ -66,9 +69,11 @@ function Dashboard({ user: propUser }) {
     };
 
     fetchData();
-  }, [user, API_BASE]);
+  }, [user, API_BASE, navigate]);
 
+  // -------------------------------
   // Handle manual skill-based recommendations
+  // -------------------------------
   const handleRecommend = async () => {
     if (!skills.trim()) return;
     try {
@@ -76,7 +81,7 @@ function Dashboard({ user: propUser }) {
       const headers = { Authorization: `Bearer ${token}` };
       const res = await axios.post(`${API_BASE}/recommend`, { skills }, { headers });
       setRecommendations(res.data);
-      setRefreshAI((prev) => !prev);
+      setRefreshAI(prev => !prev);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
     }
@@ -98,7 +103,7 @@ function Dashboard({ user: propUser }) {
       <textarea
         placeholder="Enter your skills..."
         value={skills}
-        onChange={(e) => setSkills(e.target.value)}
+        onChange={e => setSkills(e.target.value)}
         style={{ width: "100%", height: "100px", marginBottom: "1rem" }}
       />
       <button onClick={handleRecommend} className="btn">

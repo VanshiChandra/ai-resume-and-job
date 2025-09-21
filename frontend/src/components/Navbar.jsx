@@ -1,26 +1,60 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem("token");
-      const role = localStorage.getItem("role");
-      setIsLoggedIn(!!token);
-      setIsAdmin(role === "admin");
-    };
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+  // -------------------------------
+  // Check login status
+  // -------------------------------
+  const checkLoginStatus = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsLoggedIn(false);
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.get(`${API_BASE}/auth/me`, { headers });
+
+      if (res.data) {
+        setIsLoggedIn(true);
+        setIsAdmin(res.data.role === "admin");
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    } catch (err) {
+      console.error("Token validation failed:", err);
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      setIsLoggedIn(false);
+      setIsAdmin(false);
+    }
+  };
+
+  // -------------------------------
+  // Run on mount & listen for storage changes
+  // -------------------------------
+  useEffect(() => {
     checkLoginStatus();
 
-    // Listen for storage changes (multi-tab sync)
-    window.addEventListener("storage", checkLoginStatus);
-    return () => window.removeEventListener("storage", checkLoginStatus);
+    const handleStorageChange = () => checkLoginStatus();
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // -------------------------------
+  // Logout handler
+  // -------------------------------
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -32,9 +66,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
-          ResumeMatcher
-        </Link>
+        <Link to="/" className="navbar-logo">ResumeMatcher</Link>
 
         <div className="navbar-links">
           <Link to="/home" className="navbar-link">Home</Link>

@@ -1,11 +1,15 @@
 import os
 from app.supabase_client import supabase
 
+# ============================
+# User Registration
+# ============================
 def register_user(name: str, email: str, password: str, role: str = "user"):
     """
     Register a new user with Supabase Auth and store their profile with role.
     """
     try:
+        # Sign up user
         res = supabase.auth.sign_up({"email": email, "password": password})
         user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
 
@@ -14,12 +18,13 @@ def register_user(name: str, email: str, password: str, role: str = "user"):
 
         user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
 
-        supabase.table("profiles").insert({
+        # Insert profile record (matching auth.users.id for RLS)
+        supabase.table("profiles").upsert({
             "id": user_id,
             "email": email,
             "name": name,
             "role": role
-        }).execute()
+        }, on_conflict="id").execute()
 
         return {"success": True, "user": user, "role": role}
 
@@ -27,9 +32,12 @@ def register_user(name: str, email: str, password: str, role: str = "user"):
         return {"success": False, "error": str(e)}
 
 
+# ============================
+# User Login
+# ============================
 def login_user(email: str, password: str):
     """
-    Login with Supabase Auth, return token + role.
+    Login with Supabase Auth, return access token + role + user info.
     """
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -40,6 +48,8 @@ def login_user(email: str, password: str):
             return {"success": False, "error": "Invalid login credentials"}
 
         user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+
+        # Fetch profile to get role
         role = "user"
         try:
             if user_id:
@@ -50,27 +60,53 @@ def login_user(email: str, password: str):
         except Exception:
             pass
 
-        # ============================
-        # New: Fetch current user from /me
-        # ============================
-        current_user = None
-        try:
-            current_user = supabase.auth.get_user(session.access_token if hasattr(session, "access_token") else session.get("access_token"))
-        except Exception:
-            pass
-
         return {
             "success": True,
-            "token": session.get("access_token") if isinstance(session, dict) else getattr(session, "access_token", None),
+            "access_token": session.get("access_token") if isinstance(session, dict) else getattr(session, "access_token", None),
+            "refresh_token": session.get("refresh_token") if isinstance(session, dict) else getattr(session, "refresh_token", None),
             "user": user,
-            "role": role,
-            "current_user": current_user  # new addition
+            "role": role
         }
 
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
+# ============================
+# Get current user from token
+# ============================
+def get_current_user(token: str):
+    """
+    Get user info and profile by verifying access token via Supabase.
+    """
+    try:
+        user_info = supabase.auth.get_user(token)
+        if not user_info or not user_info.user:
+            return {"success": False, "error": "Invalid token"}
+
+        user_id = str(user_info.user.id)
+
+        # Fetch profile to get full info
+        profile_res = supabase.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
+        profile = profile_res.data if hasattr(profile_res, "data") else profile_res.get("data") or {}
+
+        return {
+            "success": True,
+            "user": {
+                "id": user_id,
+                "email": user_info.user.email,
+                "name": profile.get("name"),
+                "role": profile.get("role", "user")
+            }
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# ============================
+# Reset password
+# ============================
 def reset_password(email: str):
     """
     Trigger Supabase password reset email.
@@ -80,25 +116,3 @@ def reset_password(email: str):
         return {"success": True, "message": "Password reset initiated"}
     except Exception as e:
         return {"success": False, "error": str(e)}
-
-
-def get_current_user(token: str):
-    """
-    Fetch user info from Supabase /me endpoint.
-    """
-    try:
-        user_info = supabase.auth.get_user(token)
-        if not user_info or not getattr(user_info, "user", None):
-            return None
-
-        profile_res = supabase.table("profiles").select("*").eq("id", str(user_info.user.id)).single().execute()
-        profile = profile_res.data if profile_res and getattr(profile_res, "data", None) else {}
-
-        return {
-            "id": str(user_info.user.id),
-            "email": user_info.user.email,
-            "name": profile.get("name"),
-            "role": profile.get("role", "user")
-        }
-    except Exception:
-        return None
